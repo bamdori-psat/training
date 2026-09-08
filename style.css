@@ -26,3 +26,5 @@
 .rank-step-label{margin-top:16px}
 
 #play .current{margin-bottom:18px}
+
+.rank-search{margin-top:20px}.rank-search>div{display:flex;gap:8px;align-items:center}.rank-search input{margin:0;min-width:0;flex:1}.rank-search .secondary{width:auto;min-height:48px;padding:10px 14px}.rank-search .text-button{flex:none}
