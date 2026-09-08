@@ -76,4 +76,6 @@ $('showRanking').onclick=()=>{$('rankCourse').value=course;$('rankStep').value='
 
 $('resultRanking').onclick=()=>{$('rankCourse').value=run.course;rankOptions();$('rankStep').value=String(run.step);ranking();};
 
-$('rankSearch').onsubmit=e=>{e.preventDefault();rankNickname=$('rankNickname').value.trim();ranking();};$('clearRankSearch').onclick=()=>{rankNickname='';$('rankNickname').value='';ranking();};
+function searchRanking(){rankNickname=$('rankNickname').value.trim();ranking();}
+$('searchRanking').onclick=searchRanking;
+$('rankNickname').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();searchRanking();}};$('clearRankSearch').onclick=()=>{rankNickname='';$('rankNickname').value='';ranking();};
