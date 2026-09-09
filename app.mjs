@@ -1,4 +1,4 @@
-import {COURSES,sequence,assess,validNickname,randomProblem,courseSteps,formatKST} from './core.mjs';
+import {COURSES,sequence,assess,validNickname,randomProblem,courseSteps,formatKST,bindPressInput} from './core.mjs?v=20260910-touch2';
 const $=id=>document.getElementById(id), apiBase=(window.TRAINING_CONFIG?.apiBase||'').replace(/\/$/,'');
 const storage={get(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}},set(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}};
 let identity=storage.get('training.identity',null); if(typeof identity!=='string'||identity.length!==36)identity=crypto.randomUUID();storage.set('training.identity',identity);
@@ -43,9 +43,7 @@ function key(k){
  if(/^\d$/.test(k)&&run.input.length===String(run.expected[run.correct]).length)submit();
  else inputDisplay();
 }
-$('keypad').onpointerdown=e=>{if(e.button!==0)return;const b=e.target.closest('[data-key]');if(!b)return;e.preventDefault();key(b.dataset.key);};
-// 키보드·보조기술 클릭을 지원하고 터치 뒤 클릭의 중복 입력을 막습니다.
-$('keypad').onclick=e=>{if(e.detail!==0||e.pointerType)return;const b=e.target.closest('[data-key]');if(b)key(b.dataset.key);};
+bindPressInput($('keypad'),'[data-key]',b=>key(b.dataset.key));
 document.addEventListener('keydown',e=>{if(phase!=='play'||e.ctrlKey||e.metaKey||e.altKey||$('quitDialog').open)return;if(/^\d$/.test(e.key)||['Backspace','Delete'].includes(e.key)){e.preventDefault();if(e.repeat)return;key(e.key==='Backspace'?'back':e.key==='Delete'?'clear':e.key);}});
 function submit(){
  if(!run.ready||!run.input||phase!=='play')return;
