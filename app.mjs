@@ -1,4 +1,4 @@
-import {COURSES,sequence,assess,validNickname,randomProblem,courseSteps} from './core.mjs';
+import {COURSES,sequence,assess,validNickname,randomProblem,courseSteps,formatKST} from './core.mjs';
 const $=id=>document.getElementById(id), apiBase=(window.TRAINING_CONFIG?.apiBase||'').replace(/\/$/,'');
 const storage={get(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}},set(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}};
 let identity=storage.get('training.identity',null); if(typeof identity!=='string'||identity.length!==36)identity=crypto.randomUUID();storage.set('training.identity',identity);
@@ -71,7 +71,7 @@ function records(){show('records');const list=$('recordList'),items=localRecords
 $('showRecords').onclick=records;$('clearRecords').onclick=()=>{if(confirm('이 브라우저의 훈련 기록을 모두 삭제할까요? 전체 랭킹 기록은 유지됩니다.')){if(storage.set('training.records',[]))records();else alert('기록을 삭제하지 못했습니다.');}};
 function rankOptions(){const previous=$('rankStep').value;$('rankStep').replaceChildren(new window.Option('전체','all'));for(const n of courseSteps($('rankCourse').value))$('rankStep').add(new window.Option(`${n}씩 빼기`,String(n)));$('rankStep').value=courseSteps($('rankCourse').value).includes(Number(previous))?previous:'all';}
 let rankNickname='';
-async function ranking(){const serial=++rankRequest;const search=rankNickname;$('rankNote').textContent=search?'검색 결과는 최대 50건이며, 순위는 선택한 코스·빼는 수 전체 기록 기준입니다.':'상위 50위까지만 조회할 수 있습니다';show('ranking');const list=$('rankList');if(!apiBase){empty(list,'전체 랭킹은 연결 준비 중입니다. 현재는 나의 기록에서 개인 훈련 결과를 확인할 수 있습니다.');return;}empty(list,'기록을 불러오고 있습니다…');try{const {rows}=await api('/ranking?course='+$('rankCourse').value+($('rankStep').value==='all'?'':'&step='+$('rankStep').value)+(search?'&nickname='+encodeURIComponent(search):''));if(serial!==rankRequest)return;list.replaceChildren();if(!rows.length)empty(list,search?'선택한 조건에 해당 닉네임의 기록이 없습니다.':'아직 등록된 기록이 없습니다. 첫 기록의 주인공이 되어 보세요.');rows.forEach((r,i)=>list.append(row(`${r.rank??i+1}. ${r.nickname}`,`${r.step}씩 빼기 · ${COURSES[r.course]?.name||''} · 시작 ${r.start}`,format(r.average)+'초/문항','평균 풀이 시간')));}catch(e){if(serial===rankRequest)empty(list,'랭킹을 불러오지 못했습니다. '+e.message);}}
+async function ranking(){const serial=++rankRequest;const search=rankNickname;$('rankNote').textContent=search?'검색 결과는 최대 50건이며, 순위는 선택한 코스·빼는 수 전체 기록 기준입니다.':'상위 50위까지만 조회할 수 있습니다';show('ranking');const list=$('rankList');if(!apiBase){empty(list,'전체 랭킹은 연결 준비 중입니다. 현재는 나의 기록에서 개인 훈련 결과를 확인할 수 있습니다.');return;}empty(list,'기록을 불러오고 있습니다…');try{const {rows}=await api('/ranking?course='+$('rankCourse').value+($('rankStep').value==='all'?'':'&step='+$('rankStep').value)+($('rankPeriod').value==='week'?'&period=week':'')+(search?'&nickname='+encodeURIComponent(search):''));if(serial!==rankRequest)return;list.replaceChildren();if(!rows.length)empty(list,search?'선택한 조건에 해당 닉네임의 기록이 없습니다.':'아직 등록된 기록이 없습니다. 첫 기록의 주인공이 되어 보세요.');rows.forEach((r,i)=>list.append(row(`${r.rank??i+1}. ${r.nickname}`,`${r.step}씩 빼기 · ${COURSES[r.course]?.name||''} · 시작 ${r.start}`,format(r.average)+'초/문항',formatKST(r.created))));}catch(e){if(serial===rankRequest)empty(list,'랭킹을 불러오지 못했습니다. '+e.message);}}
 $('showRanking').onclick=()=>{$('rankCourse').value=course;$('rankStep').value='all';rankOptions();ranking();};$('rankCourse').onchange=()=>{rankOptions();ranking();};$('rankStep').onchange=ranking;document.querySelectorAll('.back').forEach(b=>b.onclick=()=>{rankRequest++;show('home');homeNote();});homeNote();
 
 $('resultRanking').onclick=()=>{$('rankCourse').value=run.course;rankOptions();$('rankStep').value=String(run.step);ranking();};
@@ -79,3 +79,5 @@ $('resultRanking').onclick=()=>{$('rankCourse').value=run.course;rankOptions();$
 function searchRanking(){rankNickname=$('rankNickname').value.trim();ranking();}
 $('searchRanking').onclick=searchRanking;
 $('rankNickname').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();searchRanking();}};$('clearRankSearch').onclick=()=>{rankNickname='';$('rankNickname').value='';ranking();};
+
+$('rankPeriod').onchange=ranking;
