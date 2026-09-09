@@ -1,4 +1,4 @@
-import {COURSES,sequence,assess,validNickname,randomProblem,courseSteps,formatKST,bindPressInput} from './core.mjs?v=20260910-touch2';
+import {COURSES,sequence,assess,validNickname,randomProblem,courseSteps,formatKST,bindPressInput,bindHubShare} from './core.mjs?v=20260910-share1';
 const $=id=>document.getElementById(id), apiBase=(window.TRAINING_CONFIG?.apiBase||'').replace(/\/$/,'');
 const storage={get(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}},set(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}};
 let identity=storage.get('training.identity',null); if(typeof identity!=='string'||identity.length!==36)identity=crypto.randomUUID();storage.set('training.identity',identity);
@@ -79,3 +79,5 @@ $('searchRanking').onclick=searchRanking;
 $('rankNickname').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();searchRanking();}};$('clearRankSearch').onclick=()=>{rankNickname='';$('rankNickname').value='';ranking();};
 
 $('rankPeriod').onchange=ranking;
+
+bindHubShare();

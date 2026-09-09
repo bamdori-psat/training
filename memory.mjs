@@ -1,4 +1,4 @@
-import {memoryLayout,memoryRows,memoryBoardSize,memoryShapeBounds,validNickname,formatKST,bindPressInput} from './core.mjs?v=20260910-stable1';
+import {memoryLayout,memoryRows,memoryBoardSize,memoryShapeBounds,validNickname,formatKST,bindPressInput,bindHubShare} from './core.mjs?v=20260910-share1';
 
 const $=id=>document.getElementById(id);
 const apiBase=(window.TRAINING_CONFIG?.apiBase||'').replace(/\/$/,'');
@@ -32,3 +32,5 @@ $('rankPeriod').onchange=ranking;
 function memoryRecords(){const rows=storage.get('training.memory.records',[]);return Array.isArray(rows)?rows.filter(r=>r&&Number.isInteger(r.score)&&Number.isFinite(r.date)).slice(0,50):[];}
 function records(){phase='records';show('records');const list=$('recordList');list.replaceChildren();const rows=memoryRecords();if(!rows.length)list.textContent='아직 기록이 없습니다. 첫 훈련을 시작해 보세요.';for(const r of rows){const item=document.createElement('div');item.className='row';const detail=document.createElement('div'),name=document.createElement('strong'),date=document.createElement('small'),points=document.createElement('strong');name.textContent='순간 기억';date.textContent=formatKST(r.date);points.textContent=r.score+'점';detail.append(name,date);item.append(detail,points);list.append(item);}}
 $('showRecords').onclick=records;$('recordBack').onclick=home;$('clearRecords').onclick=()=>{if(confirm('이 브라우저의 훈련 기록을 모두 삭제할까요? 전체 랭킹 기록은 유지됩니다.')){storage.set('training.memory.records',[]);records();}};
+
+bindHubShare();
