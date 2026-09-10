@@ -4,7 +4,7 @@ export async function requestTrainingJSON(url,body,{timeoutMs=body?10000:30000,r
   const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),timeoutMs);
   try{
    const response=await fetch(url,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:controller.signal});
-   if(!response.ok){let data;try{data=await response.json();}catch{}const error=new Error(data?.error||`데이터를 불러오지 못했습니다. (${response.status})`);error.retryable=[408,429,502,503,504].includes(response.status);throw error;}
+   if(!response.ok){let data;try{data=await response.json();}catch{}const error=new Error(data?.error||`데이터를 불러오지 못했습니다. (${response.status})`);error.code=data?.code;error.retryable=[408,429,502,503,504].includes(response.status);throw error;}
    return await response.json();
   }catch(error){const timedOut=controller.signal.aborted||['AbortError','TimeoutError'].includes(error.name);const retryable=timedOut||error.retryable===true||error instanceof TypeError;
    if(attempt<retries&&retryable)continue;
