@@ -1,17 +1,20 @@
-import {createRankingExplorer} from './analytics.mjs?v=20260911-arithmetic1';
-import {memoryLayout,memoryRows,memoryBoardSize,memoryShapeBounds,validNickname,formatKST,bindPressInput,bindHubShare} from './core.mjs?v=20260911-arithmetic1';
+import {requestTrainingJSON} from './network.mjs?v=20260911-nav1';
+import {createScreenHistory} from './navigation.mjs?v=20260911-nav1';
+import {createRankingExplorer} from './analytics.mjs?v=20260911-nav1';
+import {memoryLayout,memoryRows,memoryBoardSize,memoryShapeBounds,validNickname,formatKST,bindPressInput,bindHubShare} from './core.mjs?v=20260911-nav1';
 
 const $=id=>document.getElementById(id);
 const apiBase=(window.TRAINING_CONFIG?.apiBase||'').replace(/\/$/,'');
 const storage={get(k,f){try{return JSON.parse(localStorage.getItem(k))??f;}catch{return f;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}};
 let identity=storage.get('training.identity',null);if(typeof identity!=='string'||identity.length!==36)identity=crypto.randomUUID();storage.set('training.identity',identity);
-async function api(path,body){const r=await fetch(apiBase+'/memory'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});const data=await r.json();if(!r.ok)throw new Error(data.error||'연결에 실패했습니다.');return data;}
+async function api(path,body){return requestTrainingJSON(apiBase+'/memory'+path,body);}
 let boardRows=0,boardColumns=0;
 function fitBoard(){if(!['memorize','recall','review'].includes(phase)||!boardRows)return;const board=$('board'),parent=board.parentElement,style=window.getComputedStyle(parent),rect=board.getBoundingClientRect(),viewport=window.visualViewport;const width=parent.clientWidth-parseFloat(style.paddingLeft||0)-parseFloat(style.paddingRight||0);const bottom=(viewport?viewport.height+viewport.offsetTop:window.innerHeight)-16;const bounds=memoryShapeBounds(layout.length);const size=memoryBoardSize(width,Math.max(0,bottom-rect.top),bounds.columns,bounds.rows);board.style.width=(boardColumns*size.tile+(boardColumns-1)*size.gap)+'px';board.style.height=(boardRows*size.tile+(boardRows-1)*size.gap)+'px';board.style.gap=size.gap+'px';board.style.gridTemplateRows='repeat('+boardRows+',minmax(0,'+size.tile+'px))';board.style.setProperty('--tile-font',size.font+'px');board.style.setProperty('--tile-radius',size.radius+'px');board.style.setProperty('--tile-border',Math.min(1,size.tile*.03)+'px');}
 window.addEventListener('resize',fitBoard);window.visualViewport?.addEventListener('resize',fitBoard);
 let active=null,recallStart=0,currentRound=null,rankRequest=0,search='';
 let count=4,round=0,score=0,mistakes=0,expected=1,layout=[],phase='home',deadline=0,clock=null,peak=4;
-function show(id){for(const name of ['home','play','result','ranking','records'])$(name).hidden=name!==id;}
+let navigation;
+function show(id){navigation?.commit(id);for(const name of ['home','play','result','ranking','records'])$(name).hidden=name!==id;}
 async function start(){if($('start').disabled)return;$('start').disabled=true;$('again').disabled=true;$('homeStatus').textContent='';try{const remote=apiBase?await api('/start',{identity}):{seed:crypto.getRandomValues(new Uint32Array(1))[0]};active={...remote,rounds:[],verified:false,published:false};count=4;round=0;score=0;mistakes=0;peak=4;$('publishBox').hidden=true;$('resultRanking').hidden=true;$('saveStatus').textContent='';$('publishStatus').textContent='';$('consent').checked=false;$('publish').disabled=false;show('play');nextRound();}catch(e){home();$('homeStatus').textContent='시작하지 못했습니다. '+e.message;}finally{$('start').disabled=false;$('again').disabled=false;}}
 function nextRound(){clearInterval(clock);round++;expected=1;phase='memorize';$('hint').classList.remove('urgent');peak=Math.max(peak,count);$('roundLabel').textContent=score+'점';$('phase').textContent='기억하세요';const rows=memoryRows(count),columns=Math.max(...rows);boardRows=rows.length;boardColumns=columns;layout=memoryLayout(count,active.seed,round);currentRound={clicks:[],endedAt:0};$('board').style.gridTemplateColumns='repeat('+(columns*2)+',minmax(0,1fr))';$('board').replaceChildren();layout.forEach((n,i)=>{const b=document.createElement('button');b.className='tile'+(n===null?' empty':'');b.textContent=n??'';let row=0,offset=i;while(offset>=rows[row])offset-=rows[row++];b.style.gridRow=String(row+1);b.style.gridColumn=(1+columns-rows[row]+offset*2)+' / span 2';b.disabled=true;b.dataset.cell=i;b.setAttribute('aria-label',n===null?'빈 칸':String(n));$('board').append(b);});fitBoard();deadline=performance.now()+2000;recallStart=deadline;tick();clock=setInterval(tick,40);}
 function tick(){const now=performance.now();if(phase==='memorize'){const left=deadline-now;if(left>0){$('hint').textContent='';return;}phase='recall';deadline+=2000;$('phase').textContent='순서대로 누르세요';[...$('board').children].forEach((b,i)=>{b.textContent='';b.className='tile covered';b.disabled=false;b.setAttribute('aria-label','가려진 칸 '+(i+1));});}
@@ -37,3 +40,6 @@ $('showRecords').onclick=records;$('recordBack').onclick=home;$('clearRecords').
 bindHubShare();
 
 const explorer=createRankingExplorer({game:'memory',apiBase,filters:()=>({period:$('rankPeriod').value,nickname:search}),refresh:ranking});
+
+navigation=createScreenHistory({render(id){rankRequest++;explorer.invalidate();if(id==='ranking')ranking();else if(id==='records')records();else if(id==='home')home();else{phase=id;show(id);}},isPlaying:()=>['memorize','recall','review'].includes(phase),canRestore:()=>Number.isInteger(active?.score),stop(){clearInterval(clock);phase='home';if($('quitDialog').open)$('quitDialog').close();}});
+navigation.init();

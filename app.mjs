@@ -1,5 +1,7 @@
-import {createRankingExplorer} from './analytics.mjs?v=20260911-arithmetic1';
-import {COURSES,sequence,assess,validNickname,randomProblem,courseSteps,formatKST,bindPressInput,bindHubShare} from './core.mjs?v=20260911-arithmetic1';
+import {requestTrainingJSON} from './network.mjs?v=20260911-nav1';
+import {createScreenHistory} from './navigation.mjs?v=20260911-nav1';
+import {createRankingExplorer} from './analytics.mjs?v=20260911-nav1';
+import {COURSES,sequence,assess,validNickname,randomProblem,courseSteps,formatKST,bindPressInput,bindHubShare} from './core.mjs?v=20260911-nav1';
 const $=id=>document.getElementById(id), apiBase=(window.TRAINING_CONFIG?.apiBase||'').replace(/\/$/,'');
 const storage={get(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}},set(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}};
 let identity=storage.get('training.identity',null); if(typeof identity!=='string'||identity.length!==36)identity=crypto.randomUUID();storage.set('training.identity',identity);
@@ -7,7 +9,8 @@ let course='easy',phase='home',run=null,timer=null,rankRequest=0,wrongAnimation=
 const keyButtons=new Map([...document.querySelectorAll('[data-key]')].map(b=>[b.dataset.key,b])),pressTimers=new WeakMap();
 function press(k){const button=keyButtons.get(k);if(!button)return;clearTimeout(pressTimers.get(button));button.classList.add('pressed');pressTimers.set(button,setTimeout(()=>button.classList.remove('pressed'),120));}
 const format=n=>(n/1000).toFixed(2);
-function show(id){document.querySelectorAll('.screen').forEach(e=>e.hidden=e.id!==id);phase=id;window.scrollTo(0,0);}
+let navigation;
+function show(id){navigation?.commit(id);document.querySelectorAll('.screen').forEach(e=>e.hidden=e.id!==id);phase=id;window.scrollTo(0,0);}
 function localRecords(){
  const rows=storage.get('training.records',[]);
  if(!Array.isArray(rows))return [];
@@ -17,7 +20,7 @@ function localRecords(){
   return {...r,total,average:total?r.elapsed/total:null};
  });
 }
-async function api(path,body){const response=await fetch(apiBase+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});const data=await response.json();if(!response.ok)throw new Error(data.error||'연결에 실패했습니다.');return data;}
+async function api(path,body){return requestTrainingJSON(apiBase+path,body);}
 function mission(id,step){const number=document.createElement('strong');number.textContent=step;$(id).replaceChildren('연속으로 ',number,'씩 빼세요');}
 function homeNote(){$('homeStatus').textContent='';}
 $('courses').onclick=e=>{const b=e.target.closest('[data-course]');if(!b)return;course=b.dataset.course;const sample={easy:[72,4],normal:[127,7],hard:[237,12]}[course];$('previewCurrent').textContent=sample[0];mission('previewMission',sample[1]);document.querySelectorAll('[data-course]').forEach(el=>{const active=el===b;el.classList.toggle('chosen',active);el.setAttribute('aria-pressed',active);});};
@@ -61,7 +64,7 @@ const record={label:run.label,course:run.course,elapsed:run.elapsed,total:run.co
 if(run.remote){$('saveStatus').textContent+=' 랭킹용 기록을 확인하고 있습니다…';try{const verified=await api('/finish',{token:run.remote.token,identity,attempts:run.attempts,elapsed:run.elapsed});finished.verified=verified;if(run===finished&&phase==='result'){$('publishBox').hidden=false;$('nickname').value=storage.get('training.nickname','');$('saveStatus').textContent=saved?'이 기기에 기록을 저장했습니다.':'브라우저 저장 공간을 사용할 수 없어 기록을 저장하지 못했습니다.';}}catch(e){if(run===finished&&phase==='result')$('saveStatus').textContent=`개인 기록은 ${saved?'저장했습니다':'저장하지 못했습니다'}. 랭킹 기록 확인 실패: ${e.message}`;}}
 }
 $('publish').onclick=async()=>{if(!run?.verified||run.published)return;const nickname=$('nickname').value.trim();if(!validNickname(nickname)){$('publishStatus').textContent='닉네임은 한글·영문·숫자·_로 2~12자 입력해 주세요.';return;}if(!$('consent').checked){$('publishStatus').textContent='기록 공개에 동의해 주세요.';return;}const finished=run;$('publish').disabled=true;try{await api('/publish',{token:finished.remote.token,identity,nickname});finished.published=true;storage.set('training.nickname',nickname);if(run===finished){$('publishStatus').textContent='등록했습니다';$('resultRanking').hidden=false;}}catch(e){if(run===finished){$('publishStatus').textContent=e.message;$('publish').disabled=false;}}};
-$('again').onclick=()=>{show('home');homeNote();start();};$('resultHome').onclick=()=>{show('home');homeNote();};
+$('again').onclick=()=>{homeNote();start();};$('resultHome').onclick=()=>{show('home');homeNote();};
 $('quit').onclick=()=>$('quitDialog').showModal();$('keepPlaying').onclick=()=>$('quitDialog').close();$('confirmQuit').onclick=()=>{$('quitDialog').close();clearInterval(timer);run=null;show('home');homeNote();};
 window.addEventListener('beforeunload',e=>{if(phase==='play'){e.preventDefault();e.returnValue='';}});
 function row(title,subtitle,score,detail){const outer=document.createElement('div');outer.className='row';const a=document.createElement('div'),b=document.createElement('div');b.className='score';for(const [parent,tag,text] of [[a,'strong',title],[a,'small',subtitle],[b,'strong',score],[b,'small',detail]]){const el=document.createElement(tag);el.textContent=text;parent.append(el);}outer.append(a,b);return outer;}
@@ -84,3 +87,6 @@ $('rankPeriod').onchange=ranking;
 bindHubShare();
 
 const explorer=createRankingExplorer({game:'subtraction',apiBase,filters:()=>({period:$('rankPeriod').value,course:$('rankCourse').value,step:$('rankStep').value,nickname:rankNickname}),refresh:ranking});
+
+navigation=createScreenHistory({render(id){rankRequest++;explorer.invalidate();if(id==='ranking')ranking();else if(id==='records')records();else{if(id==='home'){clearInterval(timer);if(run)run.ready=false;}show(id);}},isPlaying:()=>phase==='play',canRestore:()=>Boolean(run?.elapsed!==undefined&&!run?.ready),stop(){clearInterval(timer);if(run)run.ready=false;if($('quitDialog').open)$('quitDialog').close();}});
+navigation.init();
