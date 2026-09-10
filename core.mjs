@@ -40,3 +40,24 @@ export function bindPressInput(container,selector,activate){let lastButton=null,
 export function memoryBoardSize(width,height,columns,rows){const w=Math.max(0,width),h=Math.max(0,height);const unit=Math.max(0,Math.min(w/columns,h/rows)),gap=Math.min(10,unit*.1);const tile=Math.max(0,Math.min((w-gap*(columns-1))/columns,(h-gap*(rows-1))/rows));return {tile,gap,width:columns*tile+(columns-1)*gap,height:rows*tile+(rows-1)*gap,font:Math.min(36,tile*.38),radius:Math.min(16,tile*.16)};}
 export function memoryShapeBounds(count){const base=Math.ceil(Math.sqrt(count));const widths=[base-1,base,base+1].map(n=>Math.min(count,5,Math.max(2,n)));return {columns:Math.max(...widths),rows:Math.ceil(count/Math.min(...widths))};}
 export function bindHubShare(root=document){const text='주변 사람들의 뇌도 말랑말랑하게 만들어 주세요!',url='https://bamdori-psat.github.io/training/';root.querySelectorAll('[data-hub-share]').forEach(button=>{button.addEventListener('click',async()=>{const box=button.closest('.hub-share'),status=box.querySelector('[role=status]'),fallback=box.querySelector('textarea');status.textContent='';fallback.hidden=true;button.disabled=true;try{if(window.navigator.share){try{await window.navigator.share({title:'밤도리 인지훈련',text,url});return;}catch(e){if(e.name==='AbortError')return;}}const content=text+'\n'+url;try{if(!window.navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');await window.navigator.clipboard.writeText(content);status.textContent='공유 문구와 링크를 복사했습니다.';}catch{fallback.value=content;fallback.hidden=false;fallback.focus();fallback.select();status.textContent='선택된 문구와 링크를 복사해 주세요.';}}finally{button.disabled=false;}});});}
+
+export const ARITHMETIC_MODES={add:'덧셈',subtract:'뺄셈',multiply:'곱셈',mixed:'혼합형'};
+export const ARITHMETIC_LENGTHS={short:20,normal:50,long:100};
+export function arithmeticQuestions(mode,length,seed){
+ if(!Object.hasOwn(ARITHMETIC_MODES,mode)||!Object.hasOwn(ARITHMETIC_LENGTHS,length)||!Number.isInteger(seed)||seed<0||seed>4294967295)throw new Error('훈련 옵션을 확인해 주세요.');
+ let state=seed>>>0;const rand=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;},pick=(a,b)=>a+Math.floor(rand()*(b-a+1));
+ const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=pick(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+ const quota=(n,weights)=>{const items=shuffle(weights.map((w,i)=>({i,count:Math.floor(n*w),fraction:n*w-Math.floor(n*w)})));let left=n-items.reduce((s,x)=>s+x.count,0);items.sort((a,b)=>b.fraction-a.fraction);for(let i=0;i<left;i++)items[i].count++;return items.sort((a,b)=>a.i-b.i).map(x=>x.count);};
+ const types={add:['a1','a2','a3'],subtract:['s1','s2'],multiply:['m1','m2']},weights={add:[1/3,1/3,1/3],subtract:[.5,.5],multiply:[.8,.2]};
+ const kinds=[];const addTypes=(group,n)=>quota(n,weights[group]).forEach((count,i)=>{for(let j=0;j<count;j++)kinds.push(types[group][i]);});
+ const total=ARITHMETIC_LENGTHS[length];
+ if(mode==='mixed'){const counts=quota(total,[.2,.2,.2,.15,.15,.1]);['add','subtract','multiply'].forEach((g,i)=>addTypes(g,counts[i]));['as','ma','ms'].forEach((g,i)=>{for(let j=0;j<counts[i+3];j++)kinds.push(g);});}else addTypes(mode,total);
+ return shuffle(kinds).map(kind=>{let a,b,c,answer,text;do{
+ a=pick(10,99);b=pick(1,9);c=pick(10,99);
+ if(['a2','a3','s2','as'].includes(kind))b=pick(10,99);
+ if(kind==='m2')b=pick(11,19);
+ switch(kind){case'a1':case'a2':answer=a+b;text=`${a} + ${b}`;break;case'a3':answer=a+b+c;text=`${a} + ${b} + ${c}`;break;case's1':case's2':answer=a-b;text=`${a} − ${b}`;break;case'm1':case'm2':answer=a*b;text=`${a} × ${b}`;break;case'as':answer=a+b-c;text=`${a} + ${b} − ${c}`;break;case'ma':answer=a*b+c;text=`(${a} × ${b}) + ${c}`;break;case'ms':answer=a*b-c;text=`(${a} × ${b}) − ${c}`;break;}
+ }while(answer<0||(kind==='s2'&&Math.floor(a/10)===Math.floor(b/10))||(kind==='ms'&&(a*b>99||Math.floor(a*b/10)===Math.floor(c/10)))||(kind==='as'&&a+b<100&&Math.floor((a+b)/10)===Math.floor(c/10)));
+ return {kind,a,b,c,answer,text};});
+}
+export function assessArithmetic(mode,length,seed,attempts){const questions=arithmeticQuestions(mode,length,seed);if(!Array.isArray(attempts)||attempts.length>2000)throw new Error('입력 기록이 올바르지 않습니다.');let correct=0;for(const value of attempts){if(!Number.isInteger(value)||value<0||value>9999||correct===questions.length)throw new Error('입력 기록이 올바르지 않습니다.');if(value===questions[correct].answer)correct++;}return {total:questions.length,complete:correct===questions.length};}
