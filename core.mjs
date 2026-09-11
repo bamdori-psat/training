@@ -53,7 +53,7 @@ export function arithmeticQuestions(mode,length,seed){
  const total=ARITHMETIC_LENGTHS[length];
  if(mode==='mixed'){const counts=quota(total,[.2,.2,.2,.15,.15,.1]);['add','subtract','multiply'].forEach((g,i)=>addTypes(g,counts[i]));['as','ma','ms'].forEach((g,i)=>{for(let j=0;j<counts[i+3];j++)kinds.push(g);});}else addTypes(mode,total);
  return shuffle(kinds).map(kind=>{let a,b,c,answer,text;do{
- a=pick(10,99);b=pick(1,9);c=pick(10,99);
+ a=pick(10,99);b=pick(2,9);c=pick(10,99);
  if(['a2','a3','s2','as'].includes(kind))b=pick(10,99);
  if(kind==='m2')b=pick(11,19);
  switch(kind){case'a2':answer=a+b;text=`${a} + ${b}`;break;case'a3':answer=a+b+c;text=`${a} + ${b} + ${c}`;break;case's2':answer=a-b;text=`${a} − ${b}`;break;case'm1':case'm2':answer=a*b;text=`${a} × ${b}`;break;case'as':answer=a+b-c;text=`${a} + ${b} − ${c}`;break;case'ma':answer=a*b+c;text=`(${a} × ${b}) + ${c}`;break;case'ms':answer=a*b-c;text=`(${a} × ${b}) − ${c}`;break;}

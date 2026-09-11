@@ -1,7 +1,7 @@
-import {requestTrainingJSON} from './network.mjs?v=20260911-arithmetic2';
-import {createScreenHistory} from './navigation.mjs?v=20260911-arithmetic2';
-import {createRankingExplorer} from './analytics.mjs?v=20260911-arithmetic2';
-import {memoryLayout,memoryRows,memoryBoardSize,memoryShapeBounds,validNickname,formatKST,bindPressInput,bindHubShare} from './core.mjs?v=20260911-arithmetic2';
+import {requestTrainingJSON} from './network.mjs?v=20260911-arithmetic3';
+import {createScreenHistory} from './navigation.mjs?v=20260911-arithmetic3';
+import {createRankingExplorer} from './analytics.mjs?v=20260911-arithmetic3';
+import {memoryLayout,memoryRows,memoryBoardSize,memoryShapeBounds,validNickname,formatKST,bindPressInput,bindHubShare} from './core.mjs?v=20260911-arithmetic3';
 
 const $=id=>document.getElementById(id);
 const apiBase=(window.TRAINING_CONFIG?.apiBase||'').replace(/\/$/,'');

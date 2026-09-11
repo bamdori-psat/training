@@ -1,5 +1,5 @@
-import {requestTrainingJSON} from './network.mjs?v=20260911-arithmetic2';
-import {formatKST,rankingCondition,COURSES,ARITHMETIC_MODES,ARITHMETIC_LENGTHS} from './core.mjs?v=20260911-arithmetic2';
+import {requestTrainingJSON} from './network.mjs?v=20260911-arithmetic3';
+import {formatKST,rankingCondition,COURSES,ARITHMETIC_MODES,ARITHMETIC_LENGTHS} from './core.mjs?v=20260911-arithmetic3';
 // 모든 훈련의 최신순·분포도 UI. 응답이 늦게 도착해도 현재 탭을 덮어쓰지 않습니다.
 export function createRankingExplorer({game,apiBase,filters,refresh}){
  const get=id=>document.getElementById(id),tabs=document.createElement('div');tabs.className='rank-tabs';tabs.setAttribute('role','group');tabs.setAttribute('aria-label','기록 보기');let view='rank',requestId=0;
