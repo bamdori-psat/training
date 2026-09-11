@@ -10,3 +10,5 @@ header{max-width:1000px;padding:28px;gap:16px}.brand{font-size:18px;font-weight:
 @media(max-width:380px){.arithmetic-modes button{padding:14px 4px}.arithmetic-modes strong{font-size:14px}}
 
 .home-hub{justify-content:center;margin-top:14px}.home-hub a{display:block;width:100%;text-align:center;border:1px solid var(--line);border-radius:12px;padding:13px 16px;background:transparent;font-weight:650}
+
+#rankList .rank-condition{font-size:14px;font-weight:400;color:var(--ink);line-height:1.6}#rankList .rank-condition strong{font-size:inherit;font-weight:800}#ranking>label,#ranking .rank-search label{font-size:14px}#ranking>select{font-weight:700}

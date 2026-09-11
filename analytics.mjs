@@ -1,5 +1,5 @@
-import {requestTrainingJSON} from './network.mjs?v=20260911-plot1';
-import {formatKST,COURSES,ARITHMETIC_MODES,ARITHMETIC_LENGTHS} from './core.mjs?v=20260911-plot1';
+import {requestTrainingJSON} from './network.mjs?v=20260911-arithmetic2';
+import {formatKST,rankingCondition,COURSES,ARITHMETIC_MODES,ARITHMETIC_LENGTHS} from './core.mjs?v=20260911-arithmetic2';
 // 모든 훈련의 최신순·분포도 UI. 응답이 늦게 도착해도 현재 탭을 덮어쓰지 않습니다.
 export function createRankingExplorer({game,apiBase,filters,refresh}){
  const get=id=>document.getElementById(id),tabs=document.createElement('div');tabs.className='rank-tabs';tabs.setAttribute('role','group');tabs.setAttribute('aria-label','기록 보기');let view='rank',requestId=0;
@@ -14,7 +14,7 @@ export function createRankingExplorer({game,apiBase,filters,refresh}){
  get('rankNote').textContent=view==='latest'?'최근 등록된 기록을 최대 50건까지 보여드립니다.':'같은 닉네임·훈련 조건의 최고 기록만 집계합니다.';
  target.textContent=apiBase?'기록을 불러오고 있습니다…':'미리보기에서는 전체 기록을 조회할 수 없습니다.';if(!apiBase)return true;
  const load=async extra=>{const query=new URLSearchParams(params);if(extra!==undefined)query.set('value',extra);return requestTrainingJSON(apiBase+'/analytics?'+query);};
- try{const data=await load();if(serial!==requestId)return true;target.replaceChildren();if(view==='latest'){if(!data.rows.length)target.textContent='등록된 기록이 없습니다.';for(const r of data.rows){const row=make('div',undefined,'row'),info=make('div'),value=make('div',undefined,'score');info.append(make('strong',r.nickname),make('small',detail(r)));value.append(make('strong',metric(r.metric)),make('small',formatKST(r.created)));row.append(info,value);target.append(row);}return true;}
+ try{const data=await load();if(serial!==requestId)return true;target.replaceChildren();if(view==='latest'){if(!data.rows.length)target.textContent='등록된 기록이 없습니다.';for(const r of data.rows){const row=make('div',undefined,'row'),info=make('div'),value=make('div',undefined,'score');const condition=make('small');if(game!=='memory')condition.append(rankingCondition(game,r));info.append(make('strong',r.nickname),condition);value.append(make('strong',metric(r.metric)),make('small',formatKST(r.created)));row.append(info,value);target.append(row);}return true;}
  const box=make('div',undefined,'distribution');target.append(box);box.append(make('p',`최고 기록 ${data.count.toLocaleString('ko-KR')}건`,'note'));if(!data.count){box.append(make('p','아직 분포도를 그릴 기록이 없습니다.'));return true;}
  const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 360 220');svg.setAttribute('role','img');svg.setAttribute('aria-label',`전체 ${data.count}건의 ${game==='memory'?'점수':'문항당 평균 시간'} 분포. 구간별 건수는 아래 표에서 확인할 수 있습니다.`);const plotMin=data.plotMin??data.min,plotMax=data.plotMax??data.max;const max=Math.max(...data.bins.map(b=>b.count));const w=300/data.bins.length;
  data.bins.forEach((bin,i)=>{const height=145*bin.count/max,rect=document.createElementNS(ns,'rect');for(const [k,v] of Object.entries({x:40+i*w+2,y:170-height,width:Math.max(1,w-4),height,rx:3,fill:bin.tail?'#b2bca4':'#78953a'}))rect.setAttribute(k,String(v));const title=document.createElementNS(ns,'title');title.textContent=`${metric(bin.from)} ~ ${metric(bin.to)}${bin.tail?' (묶음)':''}: ${bin.count}건`;rect.append(title);svg.append(rect);});

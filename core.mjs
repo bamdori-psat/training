@@ -48,7 +48,7 @@ export function arithmeticQuestions(mode,length,seed){
  let state=seed>>>0;const rand=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;},pick=(a,b)=>a+Math.floor(rand()*(b-a+1));
  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=pick(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
  const quota=(n,weights)=>{const items=shuffle(weights.map((w,i)=>({i,count:Math.floor(n*w),fraction:n*w-Math.floor(n*w)})));let left=n-items.reduce((s,x)=>s+x.count,0);items.sort((a,b)=>b.fraction-a.fraction);for(let i=0;i<left;i++)items[i].count++;return items.sort((a,b)=>a.i-b.i).map(x=>x.count);};
- const types={add:['a1','a2','a3'],subtract:['s1','s2'],multiply:['m1','m2']},weights={add:[1/3,1/3,1/3],subtract:[.5,.5],multiply:[.8,.2]};
+ const types={add:['a2','a3'],subtract:['s2'],multiply:['m1','m2']},weights={add:[.5,.5],subtract:[1],multiply:[.8,.2]};
  const kinds=[];const addTypes=(group,n)=>quota(n,weights[group]).forEach((count,i)=>{for(let j=0;j<count;j++)kinds.push(types[group][i]);});
  const total=ARITHMETIC_LENGTHS[length];
  if(mode==='mixed'){const counts=quota(total,[.2,.2,.2,.15,.15,.1]);['add','subtract','multiply'].forEach((g,i)=>addTypes(g,counts[i]));['as','ma','ms'].forEach((g,i)=>{for(let j=0;j<counts[i+3];j++)kinds.push(g);});}else addTypes(mode,total);
@@ -56,8 +56,10 @@ export function arithmeticQuestions(mode,length,seed){
  a=pick(10,99);b=pick(1,9);c=pick(10,99);
  if(['a2','a3','s2','as'].includes(kind))b=pick(10,99);
  if(kind==='m2')b=pick(11,19);
- switch(kind){case'a1':case'a2':answer=a+b;text=`${a} + ${b}`;break;case'a3':answer=a+b+c;text=`${a} + ${b} + ${c}`;break;case's1':case's2':answer=a-b;text=`${a} − ${b}`;break;case'm1':case'm2':answer=a*b;text=`${a} × ${b}`;break;case'as':answer=a+b-c;text=`${a} + ${b} − ${c}`;break;case'ma':answer=a*b+c;text=`(${a} × ${b}) + ${c}`;break;case'ms':answer=a*b-c;text=`(${a} × ${b}) − ${c}`;break;}
- }while(answer<0||(kind==='s2'&&Math.floor(a/10)===Math.floor(b/10))||(kind==='ms'&&(a*b>99||Math.floor(a*b/10)===Math.floor(c/10)))||(kind==='as'&&a+b<100&&Math.floor((a+b)/10)===Math.floor(c/10)));
+ switch(kind){case'a2':answer=a+b;text=`${a} + ${b}`;break;case'a3':answer=a+b+c;text=`${a} + ${b} + ${c}`;break;case's2':answer=a-b;text=`${a} − ${b}`;break;case'm1':case'm2':answer=a*b;text=`${a} × ${b}`;break;case'as':answer=a+b-c;text=`${a} + ${b} − ${c}`;break;case'ma':answer=a*b+c;text=`(${a} × ${b}) + ${c}`;break;case'ms':answer=a*b-c;text=`(${a} × ${b}) − ${c}`;break;}
+ }while(answer<0||(kind==='m2'&&answer>=1000)||(kind==='s2'&&Math.floor(a/10)===Math.floor(b/10))||(kind==='ms'&&(a*b>99||Math.floor(a*b/10)===Math.floor(c/10)))||(kind==='as'&&a+b<100&&Math.floor((a+b)/10)===Math.floor(c/10)));
  return {kind,a,b,c,answer,text};});
 }
 export function assessArithmetic(mode,length,seed,attempts){const questions=arithmeticQuestions(mode,length,seed);if(!Array.isArray(attempts)||attempts.length>2000)throw new Error('입력 기록이 올바르지 않습니다.');let correct=0;for(const value of attempts){if(!Number.isInteger(value)||value<0||value>9999||correct===questions.length)throw new Error('입력 기록이 올바르지 않습니다.');if(value===questions[correct].answer)correct++;}return {total:questions.length,complete:correct===questions.length};}
+
+export function rankingCondition(game,record){const span=document.createElement('span');span.className='rank-condition';const strong=document.createElement('strong');strong.textContent=game==='subtraction'?(COURSES[record.course]?.name||''):(ARITHMETIC_MODES[record.mode]||'');span.append(strong);span.append(game==='subtraction'?` · ${record.step}씩 빼기${record.start!=null?' · 시작 '+record.start:''}`:` · ${ARITHMETIC_LENGTHS[record.length]}문제`);return span;}
