@@ -1,7 +1,7 @@
-import {requestTrainingJSON} from './network.mjs?v=20260911-arithmetic3';
-import {createScreenHistory} from './navigation.mjs?v=20260911-arithmetic3';
-import {createRankingExplorer} from './analytics.mjs?v=20260911-arithmetic3';
-import {ARITHMETIC_MODES,ARITHMETIC_LENGTHS,arithmeticQuestions,validNickname,formatKST,rankingCondition,bindPressInput,bindHubShare} from './core.mjs?v=20260911-arithmetic3';
+import {requestTrainingJSON} from './network.mjs?v=20260919-memory1';
+import {createScreenHistory} from './navigation.mjs?v=20260919-memory1';
+import {createRankingExplorer} from './analytics.mjs?v=20260919-memory1';
+import {ARITHMETIC_MODES,ARITHMETIC_LENGTHS,arithmeticQuestions,validNickname,formatKST,rankingCondition,bindPressInput,bindHubShare} from './core.mjs?v=20260919-memory1';
 const $=id=>document.getElementById(id), apiBase=(window.TRAINING_CONFIG?.apiBase||'').replace(/\/$/,'');
 const storage={get(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}},set(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}};
 let identity=storage.get('training.identity',null); if(typeof identity!=='string'||identity.length!==36)identity=crypto.randomUUID();storage.set('training.identity',identity);
